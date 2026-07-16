@@ -233,25 +233,23 @@ const SU = ["Edith Holloway","Arthur Penn","Margaret Doyle","Stanley Okafor","Jo
  "Bernard Achebe","Gladys Romano","Leonard Vasquez","Peggy Nowak","Ronald Adeyemi"];
 
 let broadcasts = [
- {id:1,title:"Confirm your flu jab time",body:"The nurse is visiting on Thursday. Please confirm the time still works for you.",
-  type:"ack",scope:"subset",total:12,confirmed:8,state:"sent",at:"Today, 09:00",ts:false},
- {id:2,title:"Confirm today's 2pm visit",body:"Your carer is due at 2pm today. Please confirm you're expecting them.",
-  type:"ack",scope:"subset",total:6,confirmed:0,state:"scheduled",at:"Today, 13:30",ts:true},
- {id:3,title:"Fire drill on Thursday",body:"There will be a short fire drill on Thursday at 10am. No action needed — just so you know.",
-  type:"info",scope:"all",total:18,state:"scheduled",at:"Thu 24 Jul, 09:00",ts:false},
+ {id:1,title:"Flu jab on Thursday",body:"The nurse is visiting on Thursday for flu jabs. Please tap OK so we know you've seen it.",
+  scope:"subset",total:12,confirmed:8,state:"sent",at:"Today, 09:00",ts:false},
+ {id:2,title:"Your 2pm visit today",body:"Your carer is due at 2pm today. Tap OK to let us know you've seen it.",
+  scope:"subset",total:6,confirmed:0,state:"scheduled",at:"Today, 13:30",ts:true},
+ {id:3,title:"Fire drill on Thursday",body:"There will be a short fire drill on Thursday at 10am. Nothing to do — just so you know.",
+  scope:"all",total:18,confirmed:0,state:"scheduled",at:"Thu 24 Jul, 09:00",ts:false},
  {id:4,title:"Reception closed this afternoon",body:"The front desk is closed this afternoon for staff training.",
-  type:"info",scope:"all",total:18,state:"sent",at:"Yesterday, 14:02",ts:false},
+  scope:"all",total:18,confirmed:15,state:"sent",at:"Yesterday, 14:02",ts:false},
  {id:5,title:"Sunday lunch choice",body:"Please choose your Sunday lunch: roast chicken or baked fish.",
-  type:"ack",scope:"all",total:18,confirmed:18,state:"sent",at:"Mon, 11:00",ts:false},
+  scope:"all",total:18,confirmed:18,state:"sent",at:"Mon, 11:00",ts:false},
 ];
 let seq=6, quiet={start:"22:00",end:"07:00"};
 const el=document.getElementById("content"), title=document.getElementById("pageTitle");
-const typeName=t=>t==="ack"?"Requires acknowledgement":"For information";
 
 /* ---- helpers ---- */
 function chip(cls,txt){return `<span class="chip ${cls}"><span class="d"></span>${txt}</span>`;}
 function confBadge(b){
-  if(b.type!=="ack") return "";
   const pct=Math.round(b.confirmed/b.total*100), done=b.confirmed===b.total;
   return `<span class="conf ${done?'done':''} tnum">${b.confirmed} of ${b.total} confirmed
     <span class="bar"><i style="width:${pct}%"></i></span></span>`;
@@ -273,8 +271,7 @@ function viewList(){
       </div>
     </div>
     <div class="right">
-      ${chip(b.type,typeName(b.type))}
-      ${b.type==="ack"&&b.state==="sent"?confBadge(b):chip(b.state==="scheduled"?"sched":"sent",b.state==="scheduled"?"Scheduled":"Sent")}
+      ${b.state==="sent"?confBadge(b):chip("sched","Scheduled")}
     </div>
   </div>`;
   el.innerHTML=`
@@ -289,12 +286,12 @@ function viewList(){
   document.getElementById("new").onclick=()=>viewCompose();
   el.querySelectorAll("[data-open]").forEach(c=>c.onclick=()=>{
     const b=broadcasts.find(x=>x.id==c.dataset.open);
-    if(b.type==="ack"&&b.state==="sent") viewDetail(b.id); else viewList();
+    if(b.state==="sent") viewDetail(b.id); else viewList();
   });
 }
 
 /* ---- compose ---- */
-let cType="ack", cScope="all";
+let cScope="all";
 function viewCompose(){
   title.textContent="New broadcast";
   el.innerHTML=`
@@ -308,15 +305,6 @@ function viewCompose(){
       <div class="field">
         <div class="fieldlabel">Message <span class="counter" id="bcn">0 / 200</span></div>
         <textarea id="b" maxlength="200" placeholder="Write a short, clear message…"></textarea>
-      </div>
-      <div class="field">
-        <div class="fieldlabel">Message type</div>
-        <div class="typegrid" id="tg">
-          <div class="tcard sel" data-t="ack"><div class="n"><span class="d"></span>Requires acknowledgement</div>
-            <div class="d2">The person confirms they've seen it. You get a list of who hasn't, to follow up.</div></div>
-          <div class="tcard" data-t="info"><div class="n"><span class="d"></span>For information</div>
-            <div class="d2">Just shown to the person. No confirmation needed, nothing to chase.</div></div>
-        </div>
       </div>
       <div class="field">
         <div class="fieldlabel">Who receives it</div>
@@ -349,26 +337,24 @@ function viewCompose(){
       </div>
     </div>
     <div>
-      <p class="previewcap">Preview on the Genie</p>
+      <p class="previewcap">Preview — full screen on the Genie</p>
       <div class="genie" id="gv"></div>
+      <p class="hint">Shown full-screen and read aloud. The person taps OK to confirm they've seen it.</p>
     </div>
    </div>`;
 
   const t=document.getElementById("t"), b=document.getElementById("b");
   const tc=document.getElementById("tc"), bcn=document.getElementById("bcn");
   const gv=document.getElementById("gv");
-  cType="ack"; cScope="all";
+  cScope="all";
   function preview(){
-    const ack=cType==="ack";
     gv.innerHTML=`<div class="gt">2:00 pm</div><div class="gcard">
       <div class="gttl">${t.value||"Message title"}</div>
       <div class="gbd">${b.value||"Your message will appear here."}</div>
-      <div class="ga">${ack?'<button class="gbig">OK, got it</button>':'<button class="gsm">Dismiss</button>'}</div></div>`;
+      <div class="ga"><button class="gbig">OK, got it</button></div></div>`;
   }
   t.oninput=()=>{tc.textContent=t.value.length+" / 50";preview();};
   b.oninput=()=>{bcn.textContent=b.value.length+" / 200";preview();};
-  document.getElementById("tg").onclick=e=>{const c=e.target.closest(".tcard");if(!c)return;
-    cType=c.dataset.t;document.querySelectorAll(".tcard").forEach(x=>x.classList.toggle("sel",x===c));preview();};
   const rl=document.getElementById("rl");
   rl.innerHTML=SU.map(n=>`<label><input type="checkbox" checked> ${n}</label>`).join("")
     +`<label class="nd"><input type="checkbox" disabled> Flat 12 — not yet deployed</label>`;
@@ -400,20 +386,18 @@ function reviewSend(){
   const whenTxt=when==="now"?"Now":(sa?sa.replace("T"," "):"(no time set)");
   openModal(`<h3>Send this broadcast?</h3>
     <div class="sum">
-      <b>Type</b><span>${typeName(cType)}</span>
       <b>To</b><span>${scope==="all"?"All deployed (18)":total+" chosen"}</span>
       <b>When</b><span>${whenTxt}</span>
       ${ts?"<b>Time-sensitive</b><span>Yes — dropped if over an hour late</span>":""}
     </div>
-    <p class="warn">Once it's sent it can't be recalled.</p>
+    <p class="warn">Shown full-screen on each Genie. Once it's sent it can't be recalled.</p>
     <div class="acts"><button class="btn ghost" id="mc">Cancel</button>
       <button class="btn primary" id="mo">${when==="now"?"Send now":"Schedule"}</button></div>`);
   document.getElementById("mc").onclick=closeModal;
   document.getElementById("mo").onclick=()=>{
     const b=document.getElementById("b").value.trim();
-    broadcasts.unshift({id:seq++,title:t,body:b,type:cType,scope,total,
-      confirmed:cType==="ack"?0:undefined,state:when==="now"?"sent":"scheduled",
-      at:when==="now"?"Just now":whenTxt,ts});
+    broadcasts.unshift({id:seq++,title:t,body:b,scope,total,confirmed:0,
+      state:when==="now"?"sent":"scheduled",at:when==="now"?"Just now":whenTxt,ts});
     closeModal();viewList();
     toast(when==="now"?"Broadcast sent.":"Broadcast scheduled.");
   };
@@ -430,7 +414,7 @@ function viewDetail(id){
   const done=b.confirmed===b.total;
   el.innerHTML=`
    <div class="backlink" id="back">← Back to broadcasts</div>
-   <div class="detailhead"><h2>${b.title}</h2>${chip(b.type,typeName(b.type))}
+   <div class="detailhead"><h2>${b.title}</h2>
      ${chip("sent","Sent "+b.at)}${b.ts?'<span class="ts">⏱ Time-sensitive</span>':''}</div>
    <p class="hint" style="max-width:60ch">${b.body}</p>
    <div class="stat">
