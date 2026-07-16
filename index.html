@@ -120,11 +120,11 @@
   <!-- COMPOSE -->
   <section class="panel" data-view="compose">
     <h2>New broadcast</h2>
-    <label class="fld"><span>Title <span class="counter" id="tc">0 / 60</span></span>
-      <input type="text" id="mtitle" maxlength="60" placeholder="e.g. Reception closed this afternoon"></label>
-    <label class="fld"><span>Message <span class="counter" id="bc">0 / 240</span></span>
-      <textarea id="mbody" maxlength="240" placeholder="Short, plain-text message…"></textarea></label>
-    <p class="note"><span class="open-q">OPEN Q · OD-7</span> Title / body limits (60 / 240 here) are placeholders — the real limits are a UX decision.</p>
+    <label class="fld"><span>Title <span class="counter" id="tc">0 / 50</span></span>
+      <input type="text" id="mtitle" maxlength="50" placeholder="e.g. Reception closed this afternoon"></label>
+    <label class="fld"><span>Message <span class="counter" id="bc">0 / 200</span></span>
+      <textarea id="mbody" maxlength="200" placeholder="Short, plain-text message…"></textarea></label>
+    <p class="note">Limits: 50-character title, 200-character message — the working defaults, to confirm in UAT.</p>
 
     <h3>Message type</h3>
     <div class="typegrid" id="typegrid">
@@ -133,7 +133,7 @@
         <div class="tdesc">The person must confirm they've seen it. You get a list of who hasn't, to follow up.</div>
       </div>
       <div class="typecard" data-t="eph">
-        <div class="tname"><span class="dot eph"></span>Ephemeral (FYI)</div>
+        <div class="tname"><span class="dot eph"></span>For information</div>
         <div class="tdesc">Just shown. No confirmation, no chasing. Delivery only — <b>no read tracking</b> (OD-2).</div>
       </div>
     </div>
@@ -180,7 +180,7 @@
   <!-- ACKS -->
   <section class="panel hidden" data-view="acks">
     <h2>Acknowledgements</h2>
-    <p class="note">Acknowledgement-required broadcasts show who has / hasn't confirmed. Ephemeral broadcasts show delivery only.</p>
+    <p class="note">Acknowledgement-required broadcasts show who has / hasn't confirmed. “For information” broadcasts show delivery only.</p>
     <ul class="list" id="ackList"></ul>
     <div class="callout"><span class="open-q">DECIDED · OD-10</span> Re-prompt / snooze is <b>out of scope</b> — an unacknowledged message surfaces once, then sits here as outstanding for staff to follow up.</div>
   </section>
@@ -202,7 +202,7 @@
     <h2>What the service user sees</h2>
     <div class="row" style="margin-bottom:14px">
       <label><input type="radio" name="gt" value="ack" checked> Acknowledgement-required</label>
-      <label><input type="radio" name="gt" value="eph"> Ephemeral</label>
+      <label><input type="radio" name="gt" value="eph"> For information</label>
       <label><input type="radio" name="gt" value="quiet"> During quiet hours</label>
     </div>
     <div class="genie" id="genie"></div>
@@ -241,8 +241,8 @@ tabs.addEventListener("click", e=>{
 /* ---------- compose ---------- */
 document.getElementById("alln").textContent = "("+DEPLOYED.length+")";
 const tc=document.getElementById("tc"), bc=document.getElementById("bc");
-mtitle.oninput=()=>tc.textContent=mtitle.value.length+" / 60";
-mbody.oninput=()=>bc.textContent=mbody.value.length+" / 240";
+mtitle.oninput=()=>tc.textContent=mtitle.value.length+" / 50";
+mbody.oninput=()=>bc.textContent=mbody.value.length+" / 200";
 
 document.getElementById("typegrid").addEventListener("click",e=>{
   const c=e.target.closest(".typecard"); if(!c) return;
@@ -276,7 +276,7 @@ document.getElementById("reviewBtn").onclick=()=>{
   if(!recips.length){ flash("composeFlash","Pick at least one recipient.",true); return; }
   const when = document.querySelector("input[name=when]:checked").value;
   const at = when==="later" ? (schedat.value||"(no time set)") : "now";
-  const typeLabel = msgType==="ack" ? "Requires acknowledgement" : "Ephemeral";
+  const typeLabel = msgType==="ack" ? "Requires acknowledgement" : "For information";
   const ts = document.getElementById("timesens").checked;
   const ok = confirm(
     `Review before sending — THIS CANNOT BE RECALLED.\n\n`+
@@ -301,7 +301,7 @@ function renderSched(){
   const ul=document.getElementById("schedList");
   const up=scheduled.filter(s=>!s.released);
   ul.innerHTML = up.length ? up.map(s=>`<li>
-      <div class="t">${s.title} <span class="badge ${s.type}">${s.type==="ack"?"ack":"FYI"}</span></div>
+      <div class="t">${s.title} <span class="badge ${s.type}">${s.type==="ack"?"ack":"Info"}</span></div>
       <div class="meta">${s.recips.length} recipients · release: ${s.at}</div>
       <div class="row" style="margin-top:8px">
         <button class="btn ghost" onclick="alert('Edit flow (prototype): recipients, time, type, content — allowed only before release.')">Edit</button>
@@ -317,7 +317,7 @@ function renderAcks(){
   const ul=document.getElementById("ackList");
   const rel=scheduled.filter(s=>s.released);
   ul.innerHTML = rel.length ? rel.map(s=>{
-    if(s.type==="eph") return `<li><div class="t">${s.title} <span class="badge eph">FYI</span></div>
+    if(s.type==="eph") return `<li><div class="t">${s.title} <span class="badge eph">Info</span></div>
       <div class="meta">Delivered to ${s.recips.length}. <b>No read tracking</b> (OD-2 — delivery only).</div></li>`;
     const done=Object.values(s.acks).filter(Boolean).length, tot=s.recips.length;
     return `<li><div class="t">${s.title} <span class="badge ack">ack</span></div>
@@ -351,7 +351,7 @@ function renderGenie(){
     </div>`;
   note.textContent = ack
     ? "Acknowledgement-required: actively surfaces and needs a deliberate confirm."
-    : "Ephemeral: surfaces the same way, but a simple dismiss — no confirm, nothing chased.";
+    : "For information: surfaces the same way, but a simple dismiss — no confirm, nothing chased.";
 }
 document.querySelectorAll("input[name=gt]").forEach(r=>r.onchange=renderGenie);
 
@@ -369,7 +369,7 @@ const SCEN=[
          ["18:07","Genie reconnects and syncs — the message is expired, so it is NOT shown. No stale 6pm prompt."]],
   q:"RESOLVED via the time-sensitive flag (1h window). Without the flag, it would still surface late on reconnect (the default). Still open (OD-12): should the expired-undelivered outcome show on the staff list?"},
  {h:"2 · Release lands inside quiet hours",
-  s:"FYI “Fire drill tomorrow 10am” scheduled for 23:15. Quiet hours are 22:00–07:00.",
+  s:"A ‘for information’ notice “Fire drill tomorrow 10am”, scheduled 23:15. Quiet hours are 22:00–07:00.",
   steps:[["23:15","Due to surface — but it's inside quiet hours."],
          ["23:15","Held. The Genie does not light up / speak."],
          ["07:00","Quiet hours end — a non-time-sensitive message surfaces now."],
