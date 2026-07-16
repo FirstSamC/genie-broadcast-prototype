@@ -1,12 +1,19 @@
-# Genie Broadcast Messaging — design prototype
+# Genie Broadcast Messaging — design prototypes
 
-Interactive **P0 design prototype** for a "broadcast messaging" feature (send a general
+Interactive **design mockups** for a "broadcast messaging" feature (send a general
 message to a group of care Genies). Published here only to give reviewers without a
-Claude licence a link they can open.
+Claude licence links they can open.
+
+## Two views
+
+- **Care-staff view** → [`/staff/`](./staff/) — the clean, product-style Broadcasts
+  screen as care-centre staff would use it (compose, scheduled/sent list, confirmation
+  tracking, quiet-hours settings).
+- **Design / testing prototype** → [`/`](./) — the same feature with design-decision
+  markers and an edge-case walkthrough rig, used to test the UX and open questions.
+
+## Please note
 
 - **All data is synthetic.** The environment "Bradford Court" and its service users are
   made up. Nothing here is connected to any real system, device, or person.
-- It's a **clickable mock**, not working software — the point is to test the UX and a few
-  edge cases (message types, quiet hours, time-sensitive delivery, no-recall).
-
-Open `index.html` (or the published site) in any browser.
+- These are **clickable mockups**, not working software.

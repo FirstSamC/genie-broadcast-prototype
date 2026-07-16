@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Care Portal — Broadcasts</title>
+<style>
+  :root{
+    --app:#e9edf3; --surface:#ffffff; --surface2:#f5f8fc; --ink:#1b2634; --muted:#65717f;
+    --line:#dce2ec; --line2:#eaeff5;
+    --primary:#2f6690; --primary-ink:#ffffff; --primary-soft:#e7eff6; --primary-line:#c4d6e6;
+    --sched:#39609c; --sched-soft:#e6ecf7;
+    --sent:#3c7a58; --sent-soft:#e2f0e8;
+    --attn:#9c6b16; --attn-soft:#f6ecd6;
+    --info:#4a5b6e; --info-soft:#e9edf2;
+    --danger:#a5342b; --danger-soft:#f8e7e4;
+    --shadow:0 1px 2px rgba(20,35,55,.06), 0 6px 20px rgba(20,35,55,.06);
+    --r:12px;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --app:#0e131a; --surface:#151c25; --surface2:#1b232e; --ink:#e6ecf3; --muted:#98a4b2;
+    --line:#28323e; --line2:#222b36;
+    --primary:#4c92c4; --primary-ink:#0b1017; --primary-soft:#182531; --primary-line:#2b4658;
+    --sched:#7aa3d6; --sched-soft:#172230; --sent:#78c299; --sent-soft:#12241a;
+    --attn:#dca94e; --attn-soft:#2a2212; --info:#9fb0c2; --info-soft:#1a222c;
+    --danger:#e8897f; --danger-soft:#2c1613;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }}
+  :root[data-theme=dark]{
+    --app:#0e131a; --surface:#151c25; --surface2:#1b232e; --ink:#e6ecf3; --muted:#98a4b2;
+    --line:#28323e; --line2:#222b36; --primary:#4c92c4; --primary-ink:#0b1017; --primary-soft:#182531;
+    --primary-line:#2b4658; --sched:#7aa3d6; --sched-soft:#172230; --sent:#78c299; --sent-soft:#12241a;
+    --attn:#dca94e; --attn-soft:#2a2212; --info:#9fb0c2; --info-soft:#1a222c; --danger:#e8897f; --danger-soft:#2c1613;
+  }
+  :root[data-theme=light]{
+    --app:#e9edf3; --surface:#ffffff; --surface2:#f5f8fc; --ink:#1b2634; --muted:#65717f; --line:#dce2ec;
+    --line2:#eaeff5; --primary:#2f6690; --primary-ink:#fff; --primary-soft:#e7eff6; --primary-line:#c4d6e6;
+    --sched:#39609c; --sched-soft:#e6ecf7; --sent:#3c7a58; --sent-soft:#e2f0e8; --attn:#9c6b16;
+    --attn-soft:#f6ecd6; --info:#4a5b6e; --info-soft:#e9edf2; --danger:#a5342b; --danger-soft:#f8e7e4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--app);color:var(--ink);
+    font:14.5px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .tnum{font-variant-numeric:tabular-nums}
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+
+  /* sidebar */
+  aside{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:18px 18px 14px;font-weight:800;font-size:15px;letter-spacing:-.01em}
+  .brand .mark{width:26px;height:26px;border-radius:7px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center}
+  nav.side{padding:6px 10px;display:flex;flex-direction:column;gap:2px}
+  nav.side a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;color:var(--muted);
+    text-decoration:none;font-weight:600;font-size:13.5px;cursor:pointer}
+  nav.side a:hover{background:var(--surface2);color:var(--ink)}
+  nav.side a.active{background:var(--primary-soft);color:var(--primary)}
+  nav.side a svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7}
+  .side-foot{margin-top:auto;padding:14px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .side-foot .env{font-size:12px;color:var(--muted)}
+  .side-foot .env b{display:block;color:var(--ink);font-size:13px}
+
+  /* topbar */
+  main{min-width:0;display:flex;flex-direction:column}
+  .topbar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--app) 82%,transparent);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:0 26px;height:58px;
+    display:flex;align-items:center;gap:14px}
+  .topbar h1{font-size:16px;margin:0;font-weight:800;letter-spacing:-.01em}
+  .mock-tag{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);padding:2px 7px;border-radius:6px}
+  .spacer{flex:1}
+  .who{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)}
+  .avatar{width:28px;height:28px;border-radius:50%;background:var(--info-soft);color:var(--info);
+    display:grid;place-items:center;font-weight:800;font-size:12px}
+  .content{padding:24px 26px 60px;max-width:1000px;width:100%}
+
+  /* buttons */
+  .btn{appearance:none;border:1px solid transparent;border-radius:9px;padding:9px 15px;font:inherit;font-weight:700;
+    font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn.primary{background:var(--primary);color:var(--primary-ink)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+  .btn.ghost:hover{background:var(--surface2)}
+  .btn.subtle{background:transparent;color:var(--primary);padding:6px 8px}
+  .btn.danger{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+
+  /* list */
+  .listhead{display:flex;align-items:center;margin-bottom:16px;gap:12px}
+  .listhead .sub{color:var(--muted);font-size:13px}
+  .section-label{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    margin:22px 2px 9px}
+  .cards{display:flex;flex-direction:column;gap:10px}
+  .bcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:15px 17px;
+    box-shadow:var(--shadow);cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:start}
+  .bcard:hover{border-color:var(--primary-line)}
+  .bcard .ttl{font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .bcard .body{color:var(--muted);font-size:13px;margin-top:3px;max-width:60ch}
+  .bcard .meta{color:var(--muted);font-size:12.5px;margin-top:8px;display:flex;flex-wrap:wrap;gap:5px 14px;align-items:center}
+  .bcard .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .chip{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+  .chip.ack{background:var(--attn-soft);color:var(--attn)}
+  .chip.info{background:var(--info-soft);color:var(--info)}
+  .chip.sched{background:var(--sched-soft);color:var(--sched)}
+  .chip.sent{background:var(--sent-soft);color:var(--sent)}
+  .chip .d{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .conf{font-size:12.5px;font-weight:700;color:var(--attn);display:flex;align-items:center;gap:8px}
+  .conf.done{color:var(--sent)}
+  .bar{width:96px;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--attn)}
+  .conf.done .bar>i{background:var(--sent)}
+  .ts{color:var(--danger);font-weight:700;font-size:11.5px;display:inline-flex;gap:4px;align-items:center}
+
+  /* forms */
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:22px 24px}
+  .fieldlabel{font-weight:700;font-size:13px;margin:0 0 6px}
+  .hint{color:var(--muted);font-size:12.5px;margin:5px 0 0}
+  input[type=text],textarea,input[type=time],input[type=datetime-local]{width:100%;padding:10px 12px;border:1px solid var(--line);
+    border-radius:9px;background:var(--surface2);color:var(--ink);font:inherit}
+  input:focus,textarea:focus{outline:2px solid var(--primary);outline-offset:1px;border-color:transparent}
+  textarea{min-height:74px;resize:vertical}
+  .counter{float:right;color:var(--muted);font-weight:400;font-size:12px}
+  .field{margin-bottom:18px}
+  .typegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.typegrid{grid-template-columns:1fr}}
+  .tcard{border:2px solid var(--line);border-radius:11px;padding:13px 15px;cursor:pointer;background:var(--surface2)}
+  .tcard:hover{border-color:var(--muted)}
+  .tcard.sel[data-t=ack]{border-color:var(--attn);background:var(--attn-soft)}
+  .tcard.sel[data-t=info]{border-color:var(--primary);background:var(--primary-soft)}
+  .tcard .n{font-weight:700;display:flex;align-items:center;gap:8px}
+  .tcard .n .d{width:9px;height:9px;border-radius:50%}
+  .tcard[data-t=ack] .n .d{background:var(--attn)} .tcard[data-t=info] .n .d{background:var(--primary)}
+  .tcard .d2{color:var(--muted);font-size:12.5px;margin-top:5px}
+  .radios{display:flex;gap:8px;flex-wrap:wrap}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg label{padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--muted);background:var(--surface2)}
+  .seg label:has(input:checked){background:var(--primary-soft);color:var(--primary)}
+  .seg input{position:absolute;opacity:0;pointer-events:none}
+  .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chk{display:flex;gap:9px;align-items:flex-start;font-size:13.5px}
+  .recips{max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px;background:var(--surface2)}
+  .recips label{display:flex;gap:9px;align-items:center;padding:8px 12px;font-size:13.5px;border-bottom:1px solid var(--line2)}
+  .recips label:last-child{border-bottom:0}
+  .recips .nd{color:var(--muted);opacity:.65}
+  .previewwrap{display:grid;grid-template-columns:1fr 300px;gap:22px}
+  @media(max-width:820px){.previewwrap{grid-template-columns:1fr}}
+  .genie{border:9px solid #1c232c;border-radius:26px;background:#0a0e13;color:#fff;padding:16px 15px 20px;min-height:250px;
+    display:flex;flex-direction:column;position:sticky;top:74px}
+  .genie .gt{font-size:11px;opacity:.65;text-align:right}
+  .genie .gcard{background:#161d26;border-radius:13px;padding:15px;margin-top:auto}
+  .genie .gttl{font-weight:800;font-size:16px}
+  .genie .gbd{font-size:13px;opacity:.9;margin-top:6px;white-space:pre-wrap}
+  .genie .ga{display:flex;gap:8px;margin-top:15px}
+  .genie .ga button{flex:1;border:0;border-radius:9px;padding:10px;font-weight:700;font-size:13px;color:#fff}
+  .genie .gbig{background:var(--primary)} .genie .gsm{background:#2a3543}
+  .previewcap{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+
+  /* detail */
+  .backlink{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:14px}
+  .backlink:hover{color:var(--ink)}
+  .detailhead{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:4px}
+  .detailhead h2{margin:0;font-size:20px;letter-spacing:-.02em}
+  .stat{display:flex;gap:26px;flex-wrap:wrap;margin:18px 0 6px}
+  .stat .k{font-size:24px;font-weight:800;letter-spacing:-.02em}
+  .stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  .rlist{margin-top:6px}
+  .rrow{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line2)}
+  .rrow .nm{flex:1;font-weight:600}
+  .rstat{font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+  .rstat.ok{color:var(--sent)} .rstat.wait{color:var(--attn)}
+  .rstat .d{width:8px;height:8px;border-radius:50%;background:currentColor}
+
+  /* settings */
+  .setrow{display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin-top:6px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);
+    padding:11px 18px;border-radius:10px;font-weight:600;font-size:13.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,33,.5);display:none;place-items:center;padding:20px;z-index:20}
+  .overlay.show{display:grid}
+  .modal{background:var(--surface);border-radius:14px;max-width:430px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .modal h3{margin:0 0 4px;font-size:17px}
+  .modal .sum{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
+  .modal .sum b{color:var(--muted);font-weight:600}
+  .modal .warn{color:var(--danger);font-size:12.5px;font-weight:600;margin:2px 0 0}
+  .modal .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+  .hidden{display:none!important}
+
+  @media(max-width:760px){
+    .app{grid-template-columns:1fr}
+    aside{position:static;height:auto;flex-direction:row;align-items:center;overflow:auto}
+    .brand{padding:12px 14px}
+    nav.side{flex-direction:row;padding:6px}
+    nav.side a span{display:none} .side-foot{display:none}
+    .bcard{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><span class="mark">◎</span> GenieConnect</div>
+    <nav class="side">
+      <a><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+      <a><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M18 20a5 5 0 0 0-3-4.6"/></svg><span>Service users</span></a>
+      <a><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg><span>Calendar</span></a>
+      <a class="active" data-nav="broadcasts"><svg viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a4 4 0 0 1 0 7"/></svg><span>Broadcasts</span></a>
+      <a><svg viewBox="0 0 24 24"><path d="M4 19V9M9 19V4M14 19v-7M19 19v-11"/></svg><span>Reports</span></a>
+      <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.5H9.4l-.3 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.3 2.5h5.2l.3-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="side-foot">
+      <div class="avatar" style="background:var(--primary-soft);color:var(--primary)">BC</div>
+      <div class="env">Environment<b>Bradford Court</b></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <h1 id="pageTitle">Broadcasts</h1>
+      <span class="mock-tag">Mockup</span>
+      <div class="spacer"></div>
+      <div class="who">Priya Shah <span class="avatar">PS</span></div>
+    </div>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+<script>
+const SU = ["Edith Holloway","Arthur Penn","Margaret Doyle","Stanley Okafor","Joan Petrusic","Reginald Amiri",
+ "Vera Sørensen","Cyril Bäck","Nancy Fitzroy","Harold Mensah","Dorothy Kaur","Wilfred Osei","Iris Lindqvist",
+ "Bernard Achebe","Gladys Romano","Leonard Vasquez","Peggy Nowak","Ronald Adeyemi"];
+
+let broadcasts = [
+ {id:1,title:"Confirm your flu jab time",body:"The nurse is visiting on Thursday. Please confirm the time still works for you.",
+  type:"ack",scope:"subset",total:12,confirmed:8,state:"sent",at:"Today, 09:00",ts:false},
+ {id:2,title:"Confirm today's 2pm visit",body:"Your carer is due at 2pm today. Please confirm you're expecting them.",
+  type:"ack",scope:"subset",total:6,confirmed:0,state:"scheduled",at:"Today, 13:30",ts:true},
+ {id:3,title:"Fire drill on Thursday",body:"There will be a short fire drill on Thursday at 10am. No action needed — just so you know.",
+  type:"info",scope:"all",total:18,state:"scheduled",at:"Thu 24 Jul, 09:00",ts:false},
+ {id:4,title:"Reception closed this afternoon",body:"The front desk is closed this afternoon for staff training.",
+  type:"info",scope:"all",total:18,state:"sent",at:"Yesterday, 14:02",ts:false},
+ {id:5,title:"Sunday lunch choice",body:"Please choose your Sunday lunch: roast chicken or baked fish.",
+  type:"ack",scope:"all",total:18,confirmed:18,state:"sent",at:"Mon, 11:00",ts:false},
+];
+let seq=6, quiet={start:"22:00",end:"07:00"};
+const el=document.getElementById("content"), title=document.getElementById("pageTitle");
+const typeName=t=>t==="ack"?"Requires acknowledgement":"For information";
+
+/* ---- helpers ---- */
+function chip(cls,txt){return `<span class="chip ${cls}"><span class="d"></span>${txt}</span>`;}
+function confBadge(b){
+  if(b.type!=="ack") return "";
+  const pct=Math.round(b.confirmed/b.total*100), done=b.confirmed===b.total;
+  return `<span class="conf ${done?'done':''} tnum">${b.confirmed} of ${b.total} confirmed
+    <span class="bar"><i style="width:${pct}%"></i></span></span>`;
+}
+function recipText(b){return b.scope==="all"?`All deployed (${b.total})`:`${b.total} chosen`;}
+
+/* ---- list view ---- */
+function viewList(){
+  title.textContent="Broadcasts";
+  const sched=broadcasts.filter(b=>b.state==="scheduled"), sent=broadcasts.filter(b=>b.state==="sent");
+  const card=b=>`<div class="bcard" data-open="${b.id}">
+    <div>
+      <div class="ttl">${b.title}</div>
+      <div class="body">${b.body}</div>
+      <div class="meta">
+        <span>${recipText(b)}</span>
+        <span>·</span><span>${b.state==="scheduled"?"Scheduled":"Sent"} ${b.at}</span>
+        ${b.ts?'<span class="ts">⏱ Time-sensitive</span>':''}
+      </div>
+    </div>
+    <div class="right">
+      ${chip(b.type,typeName(b.type))}
+      ${b.type==="ack"&&b.state==="sent"?confBadge(b):chip(b.state==="scheduled"?"sched":"sent",b.state==="scheduled"?"Scheduled":"Sent")}
+    </div>
+  </div>`;
+  el.innerHTML=`
+    <div class="listhead">
+      <div><div style="font-weight:800;font-size:19px;letter-spacing:-.02em">Broadcasts</div>
+      <div class="sub">Send a message to the deployed Genies in Bradford Court.</div></div>
+      <div class="spacer"></div>
+      <button class="btn primary" id="new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New broadcast</button>
+    </div>
+    ${sched.length?`<div class="section-label">Scheduled</div><div class="cards">${sched.map(card).join("")}</div>`:""}
+    <div class="section-label">Sent</div><div class="cards">${sent.map(card).join("")}</div>`;
+  document.getElementById("new").onclick=()=>viewCompose();
+  el.querySelectorAll("[data-open]").forEach(c=>c.onclick=()=>{
+    const b=broadcasts.find(x=>x.id==c.dataset.open);
+    if(b.type==="ack"&&b.state==="sent") viewDetail(b.id); else viewList();
+  });
+}
+
+/* ---- compose ---- */
+let cType="ack", cScope="all";
+function viewCompose(){
+  title.textContent="New broadcast";
+  el.innerHTML=`
+   <div class="backlink" id="back">← Back to broadcasts</div>
+   <div class="previewwrap">
+    <div class="panel">
+      <div class="field">
+        <div class="fieldlabel">Title <span class="counter" id="tc">0 / 50</span></div>
+        <input type="text" id="t" maxlength="50" placeholder="e.g. Reception closed this afternoon">
+      </div>
+      <div class="field">
+        <div class="fieldlabel">Message <span class="counter" id="bcn">0 / 200</span></div>
+        <textarea id="b" maxlength="200" placeholder="Write a short, clear message…"></textarea>
+      </div>
+      <div class="field">
+        <div class="fieldlabel">Message type</div>
+        <div class="typegrid" id="tg">
+          <div class="tcard sel" data-t="ack"><div class="n"><span class="d"></span>Requires acknowledgement</div>
+            <div class="d2">The person confirms they've seen it. You get a list of who hasn't, to follow up.</div></div>
+          <div class="tcard" data-t="info"><div class="n"><span class="d"></span>For information</div>
+            <div class="d2">Just shown to the person. No confirmation needed, nothing to chase.</div></div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="fieldlabel">Who receives it</div>
+        <div class="radios">
+          <div class="seg"><label>All deployed (18)<input type="radio" name="sc" value="all" checked></label>
+          <label>Choose people<input type="radio" name="sc" value="subset"></label></div>
+        </div>
+        <div class="recips hidden" id="rl"></div>
+      </div>
+      <div class="field">
+        <div class="fieldlabel">When</div>
+        <div class="radios">
+          <div class="seg"><label>Send now<input type="radio" name="wh" value="now" checked></label>
+          <label>Schedule<input type="radio" name="wh" value="later"></label></div>
+          <input type="datetime-local" id="sa" class="hidden" style="max-width:220px">
+        </div>
+        <div class="quick hidden" id="qb">
+          <button class="btn ghost" data-q="1">+1 hour</button>
+          <button class="btn ghost" data-q="2">+2 hours</button>
+          <button class="btn ghost" data-q="tom">Tomorrow 9am</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="chk"><input type="checkbox" id="ts">
+          <span><b>Time-sensitive</b> — if it can't reach the Genie within an hour of its time, drop it rather than showing it late.</span></label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn primary" id="send">Review &amp; send…</button>
+        <button class="btn ghost" id="cancel">Cancel</button>
+      </div>
+    </div>
+    <div>
+      <p class="previewcap">Preview on the Genie</p>
+      <div class="genie" id="gv"></div>
+    </div>
+   </div>`;
+
+  const t=document.getElementById("t"), b=document.getElementById("b");
+  const tc=document.getElementById("tc"), bcn=document.getElementById("bcn");
+  const gv=document.getElementById("gv");
+  cType="ack"; cScope="all";
+  function preview(){
+    const ack=cType==="ack";
+    gv.innerHTML=`<div class="gt">2:00 pm</div><div class="gcard">
+      <div class="gttl">${t.value||"Message title"}</div>
+      <div class="gbd">${b.value||"Your message will appear here."}</div>
+      <div class="ga">${ack?'<button class="gbig">OK, got it</button>':'<button class="gsm">Dismiss</button>'}</div></div>`;
+  }
+  t.oninput=()=>{tc.textContent=t.value.length+" / 50";preview();};
+  b.oninput=()=>{bcn.textContent=b.value.length+" / 200";preview();};
+  document.getElementById("tg").onclick=e=>{const c=e.target.closest(".tcard");if(!c)return;
+    cType=c.dataset.t;document.querySelectorAll(".tcard").forEach(x=>x.classList.toggle("sel",x===c));preview();};
+  const rl=document.getElementById("rl");
+  rl.innerHTML=SU.map(n=>`<label><input type="checkbox" checked> ${n}</label>`).join("")
+    +`<label class="nd"><input type="checkbox" disabled> Flat 12 — not yet deployed</label>`;
+  document.querySelectorAll("input[name=sc]").forEach(r=>r.onchange=()=>{
+    cScope=document.querySelector("input[name=sc]:checked").value;
+    rl.classList.toggle("hidden",cScope!=="subset");});
+  const sa=document.getElementById("sa"), qb=document.getElementById("qb");
+  document.querySelectorAll("input[name=wh]").forEach(r=>r.onchange=()=>{
+    const later=document.querySelector("input[name=wh]:checked").value==="later";
+    sa.classList.toggle("hidden",!later);qb.classList.toggle("hidden",!later);});
+  qb.onclick=e=>{const q=e.target.closest("button[data-q]");if(!q)return;const d=new Date();
+    if(q.dataset.q==="1")d.setHours(d.getHours()+1);else if(q.dataset.q==="2")d.setHours(d.getHours()+2);
+    else{d.setDate(d.getDate()+1);d.setHours(9,0,0,0);}
+    const p=n=>String(n).padStart(2,"0");
+    sa.value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;};
+  document.getElementById("back").onclick=viewList;
+  document.getElementById("cancel").onclick=viewList;
+  document.getElementById("send").onclick=()=>reviewSend();
+  preview();
+}
+
+function reviewSend(){
+  const t=document.getElementById("t").value.trim()||"(no title)";
+  const scope=document.querySelector("input[name=sc]:checked").value;
+  const when=document.querySelector("input[name=wh]:checked").value;
+  const sa=document.getElementById("sa").value;
+  const ts=document.getElementById("ts").checked;
+  const total=scope==="all"?18:[...document.querySelectorAll("#rl input:checked")].length;
+  const whenTxt=when==="now"?"Now":(sa?sa.replace("T"," "):"(no time set)");
+  openModal(`<h3>Send this broadcast?</h3>
+    <div class="sum">
+      <b>Type</b><span>${typeName(cType)}</span>
+      <b>To</b><span>${scope==="all"?"All deployed (18)":total+" chosen"}</span>
+      <b>When</b><span>${whenTxt}</span>
+      ${ts?"<b>Time-sensitive</b><span>Yes — dropped if over an hour late</span>":""}
+    </div>
+    <p class="warn">Once it's sent it can't be recalled.</p>
+    <div class="acts"><button class="btn ghost" id="mc">Cancel</button>
+      <button class="btn primary" id="mo">${when==="now"?"Send now":"Schedule"}</button></div>`);
+  document.getElementById("mc").onclick=closeModal;
+  document.getElementById("mo").onclick=()=>{
+    const b=document.getElementById("b").value.trim();
+    broadcasts.unshift({id:seq++,title:t,body:b,type:cType,scope,total,
+      confirmed:cType==="ack"?0:undefined,state:when==="now"?"sent":"scheduled",
+      at:when==="now"?"Just now":whenTxt,ts});
+    closeModal();viewList();
+    toast(when==="now"?"Broadcast sent.":"Broadcast scheduled.");
+  };
+}
+
+/* ---- detail (ack, sent) ---- */
+function viewDetail(id){
+  const b=broadcasts.find(x=>x.id==id); title.textContent=b.title;
+  const names=SU.slice(0,b.total);
+  const rows=names.map((n,i)=>{
+    const ok=i<b.confirmed;
+    return `<div class="rrow"><span class="nm">${n}</span>
+      <span class="rstat ${ok?'ok':'wait'}"><span class="d"></span>${ok?'Confirmed':'Not yet'}</span></div>`;}).join("");
+  const done=b.confirmed===b.total;
+  el.innerHTML=`
+   <div class="backlink" id="back">← Back to broadcasts</div>
+   <div class="detailhead"><h2>${b.title}</h2>${chip(b.type,typeName(b.type))}
+     ${chip("sent","Sent "+b.at)}${b.ts?'<span class="ts">⏱ Time-sensitive</span>':''}</div>
+   <p class="hint" style="max-width:60ch">${b.body}</p>
+   <div class="stat">
+     <div><div class="k tnum" style="color:var(--sent)">${b.confirmed}</div><div class="l">Confirmed</div></div>
+     <div><div class="k tnum" style="color:var(--attn)">${b.total-b.confirmed}</div><div class="l">Outstanding</div></div>
+     <div><div class="k tnum">${b.total}</div><div class="l">Recipients</div></div>
+   </div>
+   ${done?'':`<button class="btn ghost" id="remind" style="margin:6px 0 4px">Send a reminder to the ${b.total-b.confirmed} outstanding</button>`}
+   <div class="section-label">Recipients</div>
+   <div class="rlist panel" style="padding:6px 18px">${rows}</div>`;
+  document.getElementById("back").onclick=viewList;
+  const rm=document.getElementById("remind"); if(rm) rm.onclick=()=>toast("Reminder sent to the outstanding recipients.");
+}
+
+/* ---- settings (quiet hours) ---- */
+function viewSettings(){
+  title.textContent="Broadcast settings";
+  el.innerHTML=`<div class="backlink" id="back">← Back to broadcasts</div>
+   <div class="panel" style="max-width:560px">
+     <div style="font-weight:800;font-size:17px;letter-spacing:-.01em">Quiet hours</div>
+     <p class="hint">During quiet hours, broadcasts won't disturb service users — a message due in this window is held and shown when quiet hours end. This applies to broadcasts across Bradford Court.</p>
+     <div class="setrow">
+       <div><div class="fieldlabel">Quiet from</div><input type="time" id="qs" value="${quiet.start}" style="width:140px"></div>
+       <div><div class="fieldlabel">Quiet until</div><input type="time" id="qe" value="${quiet.end}" style="width:140px"></div>
+       <button class="btn primary" id="save">Save</button>
+     </div>
+   </div>`;
+  document.getElementById("back").onclick=viewList;
+  document.getElementById("save").onclick=()=>{quiet.start=qs.value;quiet.end=qe.value;
+    toast(`Quiet hours saved: ${quiet.start}–${quiet.end}.`);};
+}
+
+/* ---- nav + chrome ---- */
+document.querySelectorAll("nav.side a").forEach(a=>a.onclick=()=>{
+  document.querySelectorAll("nav.side a").forEach(x=>x.classList.remove("active"));
+  a.classList.add("active");
+  if(a.dataset.nav==="broadcasts"||a.querySelector("span")?.textContent==="Broadcasts") viewList();
+  else if(a.querySelector("span")?.textContent==="Settings") viewSettings();
+  else { viewList(); toast("This mockup focuses on Broadcasts."); }
+});
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600);}
+function openModal(h){document.getElementById("modal").innerHTML=h;document.getElementById("overlay").classList.add("show");}
+function closeModal(){document.getElementById("overlay").classList.remove("show");}
+document.getElementById("overlay").onclick=e=>{if(e.target.id==="overlay")closeModal();};
+
+viewList();
+</script>
+</body>
+</html>
