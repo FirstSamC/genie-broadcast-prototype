@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genie Broadcast Messaging — Prototype (P0)</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --ink:#1c2530; --muted:#5c6b7a; --line:#e2e6eb;
+    --brand:#0a7ea4; --brand-ink:#ffffff; --ack:#8a5a00; --ack-bg:#fff4e0;
+    --eph:#3a5a40; --eph-bg:#e7f0e9; --warn:#b3261e; --warn-bg:#fdecea;
+    --open:#5b3fa8; --open-bg:#efe9fb; --ok:#2e7d32;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 14px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#12161b; --panel:#1b2129; --ink:#e7ecf1; --muted:#9aa7b4; --line:#2b333d;
+      --brand:#2aa7cc; --ack:#e0a94a; --ack-bg:#332913; --eph:#8fc79a; --eph-bg:#16261a;
+      --warn:#f2a49e; --warn-bg:#331a18; --open:#c4b0f0; --open-bg:#221a33; --ok:#8fce92;
+      --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.25);}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:20px 16px 64px}
+  header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 14px;margin-bottom:4px}
+  header.top h1{font-size:20px;margin:0}
+  .pill{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;background:var(--open-bg);color:var(--open)}
+  .sub{color:var(--muted);font-size:13px;margin:2px 0 18px;max-width:70ch}
+  nav.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);margin-bottom:20px}
+  nav.tabs button{appearance:none;border:0;background:none;color:var(--muted);font:inherit;font-weight:600;
+    padding:9px 12px;border-radius:8px 8px 0 0;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  nav.tabs button:hover{color:var(--ink)}
+  nav.tabs button[aria-selected=true]{color:var(--brand);border-bottom-color:var(--brand)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:20px;margin-bottom:18px}
+  .panel h2{font-size:16px;margin:0 0 4px}
+  .panel h3{font-size:14px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  label.fld{display:block;margin:14px 0}
+  label.fld > span{display:block;font-weight:600;font-size:13px;margin-bottom:5px}
+  input[type=text],textarea,input[type=datetime-local],input[type=time],select{
+    width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+  textarea{resize:vertical;min-height:70px}
+  .counter{float:right;font-weight:400;color:var(--muted)}
+  .typegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:620px){.typegrid{grid-template-columns:1fr}}
+  .typecard{border:2px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;background:var(--bg)}
+  .typecard:hover{border-color:var(--muted)}
+  .typecard.sel[data-t=ack]{border-color:var(--ack);background:var(--ack-bg)}
+  .typecard.sel[data-t=eph]{border-color:var(--eph);background:var(--eph-bg)}
+  .typecard .tname{font-weight:700;display:flex;align-items:center;gap:7px}
+  .typecard .tdesc{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dot.ack{background:var(--ack)} .dot.eph{background:var(--eph)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .recips{max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 4px;margin-top:8px}
+  .recips label{display:flex;gap:8px;align-items:center;padding:5px 8px;border-radius:6px;font-size:13.5px}
+  .recips label:hover{background:var(--bg)}
+  .recips .nd{color:var(--muted);opacity:.7}
+  .badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .badge.ack{background:var(--ack-bg);color:var(--ack)} .badge.eph{background:var(--eph-bg);color:var(--eph)}
+  .badge.nd{background:var(--line);color:var(--muted)}
+  button.btn{appearance:none;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}
+  button.btn.primary{background:var(--brand);color:var(--brand-ink)}
+  button.btn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+  button.btn.danger{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+  button.btn:disabled{opacity:.45;cursor:not-allowed}
+  .list{list-style:none;margin:8px 0 0;padding:0}
+  .list li{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--bg)}
+  .list li .t{font-weight:700}
+  .list li .meta{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .callout{border-left:4px solid var(--open);background:var(--open-bg);border-radius:8px;padding:10px 13px;margin:12px 0;font-size:13.5px}
+  .callout.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .callout b{color:var(--open)} .callout.warn b{color:var(--warn)}
+  .open-q{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.03em;color:var(--open);
+    background:var(--open-bg);padding:2px 7px;border-radius:6px;margin-right:6px}
+  .genie{max-width:330px;margin:0 auto;border:10px solid #222;border-radius:26px;background:#0b0f13;
+    padding:18px 16px 22px;color:#fff;min-height:300px;display:flex;flex-direction:column}
+  .genie .gtime{font-size:12px;opacity:.7;text-align:right}
+  .genie .gcard{background:#182029;border-radius:14px;padding:16px;margin-top:auto}
+  .genie .gtitle{font-weight:800;font-size:17px}
+  .genie .gbody{font-size:14px;opacity:.9;margin-top:6px}
+  .genie .gactions{display:flex;gap:8px;margin-top:16px}
+  .genie .gactions button{flex:1;border:0;border-radius:9px;padding:10px;font-weight:700;font-size:14px;cursor:pointer}
+  .genie .gbig{background:var(--brand);color:#fff} .genie .gsub{background:#2b333d;color:#fff}
+  .genie .quiet{margin-top:auto;text-align:center;font-size:13px;opacity:.8;padding:16px;border:1px dashed #3a444f;border-radius:12px}
+  .steps{list-style:none;margin:12px 0 0;padding:0;counter-reset:s}
+  .steps li{position:relative;padding:8px 8px 8px 40px;margin-bottom:8px;border-radius:8px;background:var(--bg);border:1px solid var(--line);opacity:.35;transition:opacity .25s}
+  .steps li.on{opacity:1}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:10px;top:8px;width:20px;height:20px;
+    border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+  .steps li .tt{font-size:11px;font-weight:700;color:var(--muted)}
+  .scenario{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;background:var(--panel)}
+  .scenario h4{margin:0 0 4px;font-size:15px}
+  .scenario .setup{font-size:13px;color:var(--muted)}
+  .settingsrow{display:flex;gap:14px;align-items:end;flex-wrap:wrap}
+  .note{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .flash{background:var(--eph-bg);border:1px solid var(--eph);color:var(--eph);border-radius:8px;padding:8px 12px;margin-top:12px;font-size:13.5px;font-weight:600}
+  .hidden{display:none}
+  code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Genie Broadcast Messaging</h1>
+    <span class="pill">Prototype · P0 · synthetic</span>
+  </header>
+  <p class="sub">Design reference for business-user testing. Nothing here is connected to a real system or real service users — the environment "Bradford Court" and its Genies are made up. Purple <span class="open-q">OPEN Q</span> markers are decisions we still need your steer on.</p>
+
+  <nav class="tabs" id="tabs">
+    <button aria-selected="true" data-tab="compose">Compose</button>
+    <button data-tab="scheduled">Scheduled</button>
+    <button data-tab="acks">Acknowledgements</button>
+    <button data-tab="quiet">Quiet hours</button>
+    <button data-tab="genie">Genie preview</button>
+    <button data-tab="edge">Edge cases ★</button>
+  </nav>
+
+  <!-- COMPOSE -->
+  <section class="panel" data-view="compose">
+    <h2>New broadcast</h2>
+    <label class="fld"><span>Title <span class="counter" id="tc">0 / 60</span></span>
+      <input type="text" id="mtitle" maxlength="60" placeholder="e.g. Reception closed this afternoon"></label>
+    <label class="fld"><span>Message <span class="counter" id="bc">0 / 240</span></span>
+      <textarea id="mbody" maxlength="240" placeholder="Short, plain-text message…"></textarea></label>
+    <p class="note"><span class="open-q">OPEN Q · OD-7</span> Title / body limits (60 / 240 here) are placeholders — the real limits are a UX decision.</p>
+
+    <h3>Message type</h3>
+    <div class="typegrid" id="typegrid">
+      <div class="typecard sel" data-t="ack">
+        <div class="tname"><span class="dot ack"></span>Requires acknowledgement</div>
+        <div class="tdesc">The person must confirm they've seen it. You get a list of who hasn't, to follow up.</div>
+      </div>
+      <div class="typecard" data-t="eph">
+        <div class="tname"><span class="dot eph"></span>Ephemeral (FYI)</div>
+        <div class="tdesc">Just shown. No confirmation, no chasing. Delivery only — <b>no read tracking</b> (OD-2).</div>
+      </div>
+    </div>
+
+    <h3>Recipients</h3>
+    <div class="row">
+      <label><input type="radio" name="rec" value="all" checked> All deployed <span id="alln"></span></label>
+      <label><input type="radio" name="rec" value="subset"> Choose specific</label>
+    </div>
+    <div class="recips hidden" id="reclist"></div>
+    <p class="note">Only <b>deployed</b> (in-use) Genies can be targeted. Not-yet-deployed ones are shown greyed and can't be selected.</p>
+
+    <h3>When</h3>
+    <div class="row">
+      <label><input type="radio" name="when" value="now" checked> Send now</label>
+      <label><input type="radio" name="when" value="later"> Schedule</label>
+      <input type="datetime-local" id="schedat" class="hidden" style="max-width:230px">
+    </div>
+    <div class="row hidden" id="quickbtns" style="margin-top:8px">
+      <span class="note" style="margin:0">Quick:</span>
+      <button type="button" class="btn ghost" data-q="1">+1 hour</button>
+      <button type="button" class="btn ghost" data-q="2">+2 hours</button>
+      <button type="button" class="btn ghost" data-q="tom">Tomorrow 9am</button>
+    </div>
+
+    <h3>Time sensitivity</h3>
+    <label class="row" style="gap:8px;align-items:flex-start">
+      <input type="checkbox" id="timesens" style="margin-top:3px">
+      <span><b>Time-sensitive</b> — drop it if it can't reach the Genie within <b>1 hour</b> of its time, rather than surfacing hours late. Use for things that only matter at the moment (e.g. "confirm your 2pm visit").</span></label>
+    <p class="note"><span class="open-q">OPEN Q · OD-12</span> If a time-sensitive message expires undelivered, should that show on the staff list? (Quiet-hours interaction is settled: it expires during quiet hours too.)</p>
+
+    <div style="margin-top:20px"><button class="btn primary" id="reviewBtn">Review &amp; send…</button></div>
+    <div class="flash hidden" id="composeFlash"></div>
+  </section>
+
+  <!-- SCHEDULED -->
+  <section class="panel hidden" data-view="scheduled">
+    <h2>Scheduled (not yet released)</h2>
+    <p class="note">You can edit or cancel a broadcast <b>only before it's released</b>. Once released it's gone out — <b>no recall</b> (OD-4).</p>
+    <ul class="list" id="schedList"></ul>
+    <div class="callout"><span class="open-q">DECIDED · OD-11</span> <b>No recall and no undo window.</b> Safeguards: the review-&-send confirmation, and cancelling a scheduled broadcast (above) before it's released.</div>
+  </section>
+
+  <!-- ACKS -->
+  <section class="panel hidden" data-view="acks">
+    <h2>Acknowledgements</h2>
+    <p class="note">Acknowledgement-required broadcasts show who has / hasn't confirmed. Ephemeral broadcasts show delivery only.</p>
+    <ul class="list" id="ackList"></ul>
+    <div class="callout"><span class="open-q">DECIDED · OD-10</span> Re-prompt / snooze is <b>out of scope</b> — an unacknowledged message surfaces once, then sits here as outstanding for staff to follow up.</div>
+  </section>
+
+  <!-- QUIET -->
+  <section class="panel hidden" data-view="quiet">
+    <h2>Quiet hours <span class="badge eph">Portal setting</span></h2>
+    <p class="note">Per environment. Broadcasts due to surface inside these hours are <b>held and shown when quiet hours end</b> — not dropped. Existing calendar reminders are unaffected (QH-1).</p>
+    <div class="settingsrow" style="margin-top:14px">
+      <label class="fld" style="margin:0"><span>Quiet from</span><input type="time" id="qstart" value="22:00" style="width:130px"></label>
+      <label class="fld" style="margin:0"><span>Quiet until</span><input type="time" id="qend" value="07:00" style="width:130px"></label>
+      <button class="btn ghost" id="qsave">Save</button>
+    </div>
+    <div class="flash hidden" id="qflash"></div>
+  </section>
+
+  <!-- GENIE -->
+  <section class="panel hidden" data-view="genie">
+    <h2>What the service user sees</h2>
+    <div class="row" style="margin-bottom:14px">
+      <label><input type="radio" name="gt" value="ack" checked> Acknowledgement-required</label>
+      <label><input type="radio" name="gt" value="eph"> Ephemeral</label>
+      <label><input type="radio" name="gt" value="quiet"> During quiet hours</label>
+    </div>
+    <div class="genie" id="genie"></div>
+    <p class="note" id="gnote" style="text-align:center"></p>
+  </section>
+
+  <!-- EDGE CASES -->
+  <section class="panel hidden" data-view="edge">
+    <h2>Edge-case scenarios ★</h2>
+    <p class="note">These are the cases that don't fit a happy-path click-through — the ones worth a business decision. Press <b>Play</b> to step through each timeline.</p>
+    <div id="scenarios"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- synthetic data ---------- */
+const DEPLOYED = ["Edith Holloway","Arthur Penn","Margaret Doyle","Stanley Okafor","Joan Petrusic",
+ "Reginald Amiri","Vera Sørensen","Cyril Bäck","Nancy Fitzroy","Harold Mensah","Dorothy Kaur",
+ "Wilfred Osei","Iris Lindqvist","Bernard Achebe","Gladys Romano","Leonard Vasquez","Peggy Nowak","Ronald Adeyemi"];
+const NOT_DEPLOYED = ["(new) Flat 12 — pairing","(new) Flat 27 — assigned","(spare) Store cupboard"];
+let msgType = "ack";
+const scheduled = [];      // {id,title,type,recips,at,released,acks:{name:bool}}
+let idSeq = 1;
+
+/* ---------- tabs ---------- */
+const tabs = document.getElementById("tabs");
+tabs.addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  [...tabs.children].forEach(x=>x.setAttribute("aria-selected", x===b));
+  document.querySelectorAll("[data-view]").forEach(v=>v.classList.toggle("hidden", v.dataset.view!==b.dataset.tab));
+  if(b.dataset.tab==="scheduled") renderSched();
+  if(b.dataset.tab==="acks") renderAcks();
+  if(b.dataset.tab==="genie") renderGenie();
+});
+
+/* ---------- compose ---------- */
+document.getElementById("alln").textContent = "("+DEPLOYED.length+")";
+const tc=document.getElementById("tc"), bc=document.getElementById("bc");
+mtitle.oninput=()=>tc.textContent=mtitle.value.length+" / 60";
+mbody.oninput=()=>bc.textContent=mbody.value.length+" / 240";
+
+document.getElementById("typegrid").addEventListener("click",e=>{
+  const c=e.target.closest(".typecard"); if(!c) return;
+  msgType=c.dataset.t;
+  document.querySelectorAll(".typecard").forEach(x=>x.classList.toggle("sel",x===c));
+});
+
+const reclist=document.getElementById("reclist");
+reclist.innerHTML = DEPLOYED.map(n=>`<label><input type="checkbox" value="${n}" checked> ${n}</label>`).join("")
+  + NOT_DEPLOYED.map(n=>`<label class="nd"><input type="checkbox" disabled> ${n} <span class="badge nd">not deployed</span></label>`).join("");
+document.querySelectorAll("input[name=rec]").forEach(r=>r.onchange=()=>reclist.classList.toggle("hidden", document.querySelector("input[name=rec]:checked").value!=="subset"));
+document.querySelectorAll("input[name=when]").forEach(r=>r.onchange=()=>{
+  const later=document.querySelector("input[name=when]:checked").value==="later";
+  schedat.classList.toggle("hidden", !later);
+  document.getElementById("quickbtns").classList.toggle("hidden", !later);
+});
+document.getElementById("quickbtns").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-q]"); if(!b) return;
+  const d=new Date();
+  if(b.dataset.q==="1") d.setHours(d.getHours()+1);
+  else if(b.dataset.q==="2") d.setHours(d.getHours()+2);
+  else { d.setDate(d.getDate()+1); d.setHours(9,0,0,0); }
+  const p=n=>String(n).padStart(2,"0");
+  schedat.value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+});
+
+document.getElementById("reviewBtn").onclick=()=>{
+  const title=mtitle.value.trim()||"(no title)";
+  const recips = document.querySelector("input[name=rec]:checked").value==="all"
+      ? DEPLOYED.slice() : [...reclist.querySelectorAll("input:checked")].map(i=>i.value);
+  if(!recips.length){ flash("composeFlash","Pick at least one recipient.",true); return; }
+  const when = document.querySelector("input[name=when]:checked").value;
+  const at = when==="later" ? (schedat.value||"(no time set)") : "now";
+  const typeLabel = msgType==="ack" ? "Requires acknowledgement" : "Ephemeral";
+  const ts = document.getElementById("timesens").checked;
+  const ok = confirm(
+    `Review before sending — THIS CANNOT BE RECALLED.\n\n`+
+    `Type: ${typeLabel}\nTime-sensitive: ${ts?"Yes — dropped if >1h late":"No"}\nTitle: ${title}\n`+
+    `Recipients: ${recips.length} deployed Genie(s)\nWhen: ${at}\n\n`+
+    `Send?`);
+  if(!ok) return;
+  const rec={id:idSeq++,title,type:msgType,recips,at,released:(when==="now"),
+    acks:Object.fromEntries(recips.map(n=>[n,false]))};
+  scheduled.push(rec);
+  flash("composeFlash", when==="now"
+    ? `Released to ${recips.length} Genie(s). See “Acknowledgements”. No recall now.`
+    : `Scheduled for ${at}. Editable/cancellable until release — see “Scheduled”.`);
+};
+
+function flash(id,msg,warn){const el=document.getElementById(id);el.textContent=msg;el.classList.remove("hidden");
+  el.style.borderColor=warn?"var(--warn)":"var(--eph)";el.style.color=warn?"var(--warn)":"var(--eph)";
+  el.style.background=warn?"var(--warn-bg)":"var(--eph-bg)";}
+
+/* ---------- scheduled ---------- */
+function renderSched(){
+  const ul=document.getElementById("schedList");
+  const up=scheduled.filter(s=>!s.released);
+  ul.innerHTML = up.length ? up.map(s=>`<li>
+      <div class="t">${s.title} <span class="badge ${s.type}">${s.type==="ack"?"ack":"FYI"}</span></div>
+      <div class="meta">${s.recips.length} recipients · release: ${s.at}</div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ghost" onclick="alert('Edit flow (prototype): recipients, time, type, content — allowed only before release.')">Edit</button>
+        <button class="btn danger" data-cancel="${s.id}">Cancel</button>
+      </div></li>`).join("")
+    : `<li class="meta">No scheduled broadcasts. Compose one with “Schedule”.</li>`;
+  ul.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{
+    const i=scheduled.findIndex(s=>s.id==b.dataset.cancel); if(i>-1)scheduled.splice(i,1); renderSched();});
+}
+
+/* ---------- acks ---------- */
+function renderAcks(){
+  const ul=document.getElementById("ackList");
+  const rel=scheduled.filter(s=>s.released);
+  ul.innerHTML = rel.length ? rel.map(s=>{
+    if(s.type==="eph") return `<li><div class="t">${s.title} <span class="badge eph">FYI</span></div>
+      <div class="meta">Delivered to ${s.recips.length}. <b>No read tracking</b> (OD-2 — delivery only).</div></li>`;
+    const done=Object.values(s.acks).filter(Boolean).length, tot=s.recips.length;
+    return `<li><div class="t">${s.title} <span class="badge ack">ack</span></div>
+      <div class="meta"><b>${done} of ${tot}</b> acknowledged · ${tot-done} outstanding</div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ghost" data-sim="${s.id}">Simulate some acks</button>
+        <button class="btn ghost" onclick="alert('Follow-up flow (prototype): message / call the outstanding recipients.')">Follow up outstanding</button>
+      </div></li>`;}).join("")
+    : `<li class="meta">Nothing released yet. Send a broadcast “now” from Compose.</li>`;
+  ul.querySelectorAll("[data-sim]").forEach(b=>b.onclick=()=>{
+    const s=scheduled.find(x=>x.id==b.dataset.sim);
+    s.recips.forEach((n,i)=>{ if(i%2===0) s.acks[n]=true; }); renderAcks();});
+}
+
+/* ---------- genie preview ---------- */
+function renderGenie(){
+  const t=document.querySelector("input[name=gt]:checked").value;
+  const g=document.getElementById("genie"), note=document.getElementById("gnote");
+  if(t==="quiet"){
+    g.innerHTML=`<div class="gtime">23:40</div><div class="quiet">🌙<br>Quiet hours<br><small>A broadcast arrived. It will show at 07:00 so it doesn't disturb them.</small></div>`;
+    note.textContent="Held during quiet hours — surfaced when they end (not dropped)."; return;
+  }
+  const ack=t==="ack";
+  g.innerHTML=`<div class="gtime">14:02</div>
+    <div class="gcard">
+      <div class="gtitle">Reception closed</div>
+      <div class="gbody">The front desk is closed this afternoon for staff training.</div>
+      <div class="gactions">${ack
+        ? `<button class="gbig" onclick="alert('Acknowledged ✓ — this confirms back to staff.')">OK, got it</button>`
+        : `<button class="gsub" onclick="alert('Dismissed. Nothing tracked.')">Dismiss</button>`}</div>
+    </div>`;
+  note.textContent = ack
+    ? "Acknowledgement-required: actively surfaces and needs a deliberate confirm."
+    : "Ephemeral: surfaces the same way, but a simple dismiss — no confirm, nothing chased.";
+}
+document.querySelectorAll("input[name=gt]").forEach(r=>r.onchange=renderGenie);
+
+/* ---------- quiet save ---------- */
+document.getElementById("qsave").onclick=()=>flash("qflash",
+  `Quiet hours saved: ${qstart.value}–${qend.value} for Bradford Court (broadcasts only).`);
+
+/* ---------- edge scenarios ---------- */
+const SCEN=[
+ {h:"1 · Genie offline at release time — TIME-SENSITIVE on",
+  s:"Ack “Confirm your 2pm visit” scheduled 14:00, marked time-sensitive. That Genie is offline at 14:00.",
+  steps:[["14:00","Server releases; the message must reach the Genie by 15:00 (target + 1h)."],
+         ["14:00","Genie offline — receives nothing yet (no message bus; nothing queued on the device)."],
+         ["15:00","The 1h window passes with no delivery → the message expires."],
+         ["18:07","Genie reconnects and syncs — the message is expired, so it is NOT shown. No stale 6pm prompt."]],
+  q:"RESOLVED via the time-sensitive flag (1h window). Without the flag, it would still surface late on reconnect (the default). Still open (OD-12): should the expired-undelivered outcome show on the staff list?"},
+ {h:"2 · Release lands inside quiet hours",
+  s:"FYI “Fire drill tomorrow 10am” scheduled for 23:15. Quiet hours are 22:00–07:00.",
+  steps:[["23:15","Due to surface — but it's inside quiet hours."],
+         ["23:15","Held. The Genie does not light up / speak."],
+         ["07:00","Quiet hours end — a non-time-sensitive message surfaces now."],
+         ["⚠︎","A TIME-SENSITIVE message would hit its 1h expiry during quiet hours → it never surfaces (by design)."]],
+  q:"CONFIRMED — hold and surface at 07:00; a time-sensitive message expires during quiet hours rather than surfacing stale (OD-12b)."},
+ {h:"3 · Ack-required, never acknowledged",
+  s:"Ack “Confirm your medication delivery” released 09:00. The person never taps confirm.",
+  steps:[["09:00","Surfaces on the Genie, awaiting confirm."],
+         ["09:00","Shows as “outstanding” on the staff acknowledgements list straight away."],
+         ["—","No automatic re-prompt or snooze — staff follow up the outstanding ones."]],
+  q:"RESOLVED — re-prompt / snooze is OUT OF SCOPE (OD-10). It surfaces once, then sits as outstanding for staff to chase."},
+ {h:"4 · Mistaken all-fleet send (no recall)",
+  s:"Staff send “Clinic cancelled” to all 18, then realise it was the wrong clinic.",
+  steps:[["10:00","Sent now → released immediately to all deployed Genies."],
+         ["10:00:30","Staff spot the mistake and open the broadcast…"],
+         ["—","No cancel — it's released. A correction message is the only option."]],
+  q:"RESOLVED — no recall, no undo window (OD-11). Safeguards: the review-&-send confirm, and cancelling a *scheduled* broadcast before release."},
+];
+const sc=document.getElementById("scenarios");
+sc.innerHTML=SCEN.map((x,i)=>`<div class="scenario">
+   <h4>${x.h}</h4><div class="setup">${x.s}</div>
+   <ol class="steps" id="st${i}">${x.steps.map(st=>`<li><span class="tt">${st[0]}</span><br>${st[1]}</li>`).join("")}</ol>
+   <div class="row" style="margin-top:10px"><button class="btn primary" data-play="${i}">▶ Play</button>
+     <button class="btn ghost" data-reset="${i}">Reset</button></div>
+   <div class="callout"><span class="open-q">DECIDE</span> ${x.q}</div></div>`).join("");
+sc.querySelectorAll("[data-play]").forEach(b=>b.onclick=()=>{
+  const li=[...document.getElementById("st"+b.dataset.play).children];
+  li.forEach((l,j)=>setTimeout(()=>l.classList.add("on"), j*650));});
+sc.querySelectorAll("[data-reset]").forEach(b=>b.onclick=()=>
+  [...document.getElementById("st"+b.dataset.reset).children].forEach(l=>l.classList.remove("on")));
+
+renderGenie();
+</script>
+</body>
+</html>
