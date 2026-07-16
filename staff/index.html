@@ -5,38 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Care Portal — Broadcasts</title>
 <style>
+  /* Palette pulled from the real portal (genieconnect-companion-app, Material 3): teal primary #00687A,
+     surface #FBFCFD, amber warning / green positive. */
   :root{
-    --app:#e9edf3; --surface:#ffffff; --surface2:#f5f8fc; --ink:#1b2634; --muted:#65717f;
-    --line:#dce2ec; --line2:#eaeff5;
-    --primary:#2f6690; --primary-ink:#ffffff; --primary-soft:#e7eff6; --primary-line:#c4d6e6;
-    --sched:#39609c; --sched-soft:#e6ecf7;
-    --sent:#3c7a58; --sent-soft:#e2f0e8;
-    --attn:#9c6b16; --attn-soft:#f6ecd6;
-    --info:#4a5b6e; --info-soft:#e9edf2;
-    --danger:#a5342b; --danger-soft:#f8e7e4;
-    --shadow:0 1px 2px rgba(20,35,55,.06), 0 6px 20px rgba(20,35,55,.06);
+    --app:#eef3f4; --surface:#fbfcfd; --surface2:#f2f6f7; --ink:#191c1d; --muted:#3f484b;
+    --line:#bfc8cb; --line2:#dbe4e7;
+    --primary:#00687a; --primary-ink:#ffffff; --primary-soft:#cee7ef; --primary-line:#7ec8d8;
+    --sched:#4a5178; --sched-soft:#e0e4ff;
+    --sent:#2e6b41; --sent-soft:#d3ebd8;
+    --attn:#7a5300; --attn-soft:#fbe6b4;
+    --info:#40545b; --info-soft:#cee7ef;
+    --danger:#ba1a1a; --danger-soft:#ffdad6;
+    --shadow:0 1px 2px rgba(25,28,29,.10), 0 4px 14px rgba(25,28,29,.05);
     --r:12px;
   }
   @media (prefers-color-scheme:dark){:root{
-    --app:#0e131a; --surface:#151c25; --surface2:#1b232e; --ink:#e6ecf3; --muted:#98a4b2;
-    --line:#28323e; --line2:#222b36;
-    --primary:#4c92c4; --primary-ink:#0b1017; --primary-soft:#182531; --primary-line:#2b4658;
-    --sched:#7aa3d6; --sched-soft:#172230; --sent:#78c299; --sent-soft:#12241a;
-    --attn:#dca94e; --attn-soft:#2a2212; --info:#9fb0c2; --info-soft:#1a222c;
-    --danger:#e8897f; --danger-soft:#2c1613;
+    --app:#14181a; --surface:#1d2325; --surface2:#232b2d; --ink:#e1e3e4; --muted:#bfc8cb;
+    --line:#3f484b; --line2:#2b3437;
+    --primary:#55d6f4; --primary-ink:#00363f; --primary-soft:#334a51; --primary-line:#3e6068;
+    --sched:#bfc4eb; --sched-soft:#3f4565; --sent:#88ce90; --sent-soft:#18311e;
+    --attn:#e0b34a; --attn-soft:#3a2e12; --info:#b2cbd2; --info-soft:#334a51;
+    --danger:#ffb4ab; --danger-soft:#5c1714;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
   }}
   :root[data-theme=dark]{
-    --app:#0e131a; --surface:#151c25; --surface2:#1b232e; --ink:#e6ecf3; --muted:#98a4b2;
-    --line:#28323e; --line2:#222b36; --primary:#4c92c4; --primary-ink:#0b1017; --primary-soft:#182531;
-    --primary-line:#2b4658; --sched:#7aa3d6; --sched-soft:#172230; --sent:#78c299; --sent-soft:#12241a;
-    --attn:#dca94e; --attn-soft:#2a2212; --info:#9fb0c2; --info-soft:#1a222c; --danger:#e8897f; --danger-soft:#2c1613;
+    --app:#14181a; --surface:#1d2325; --surface2:#232b2d; --ink:#e1e3e4; --muted:#bfc8cb;
+    --line:#3f484b; --line2:#2b3437; --primary:#55d6f4; --primary-ink:#00363f; --primary-soft:#334a51;
+    --primary-line:#3e6068; --sched:#bfc4eb; --sched-soft:#3f4565; --sent:#88ce90; --sent-soft:#18311e;
+    --attn:#e0b34a; --attn-soft:#3a2e12; --info:#b2cbd2; --info-soft:#334a51; --danger:#ffb4ab; --danger-soft:#5c1714;
   }
   :root[data-theme=light]{
-    --app:#e9edf3; --surface:#ffffff; --surface2:#f5f8fc; --ink:#1b2634; --muted:#65717f; --line:#dce2ec;
-    --line2:#eaeff5; --primary:#2f6690; --primary-ink:#fff; --primary-soft:#e7eff6; --primary-line:#c4d6e6;
-    --sched:#39609c; --sched-soft:#e6ecf7; --sent:#3c7a58; --sent-soft:#e2f0e8; --attn:#9c6b16;
-    --attn-soft:#f6ecd6; --info:#4a5b6e; --info-soft:#e9edf2; --danger:#a5342b; --danger-soft:#f8e7e4;
+    --app:#eef3f4; --surface:#fbfcfd; --surface2:#f2f6f7; --ink:#191c1d; --muted:#3f484b; --line:#bfc8cb;
+    --line2:#dbe4e7; --primary:#00687a; --primary-ink:#fff; --primary-soft:#cee7ef; --primary-line:#7ec8d8;
+    --sched:#4a5178; --sched-soft:#e0e4ff; --sent:#2e6b41; --sent-soft:#d3ebd8; --attn:#7a5300;
+    --attn-soft:#fbe6b4; --info:#40545b; --info-soft:#cee7ef; --danger:#ba1a1a; --danger-soft:#ffdad6;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--app);color:var(--ink);
@@ -73,13 +75,14 @@
   .content{padding:24px 26px 60px;max-width:1000px;width:100%}
 
   /* buttons */
-  .btn{appearance:none;border:1px solid transparent;border-radius:9px;padding:9px 15px;font:inherit;font-weight:700;
-    font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  /* M3 buttons: filled = pill, secondary = outlined (primary label), tertiary = text */
+  .btn{appearance:none;border:1px solid transparent;border-radius:100px;padding:10px 20px;font:inherit;font-weight:600;
+    font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;letter-spacing:.01em}
   .btn.primary{background:var(--primary);color:var(--primary-ink)}
   .btn.primary:hover{filter:brightness(1.06)}
-  .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
-  .btn.ghost:hover{background:var(--surface2)}
-  .btn.subtle{background:transparent;color:var(--primary);padding:6px 8px}
+  .btn.ghost{background:transparent;color:var(--primary);border-color:var(--line)}
+  .btn.ghost:hover{background:var(--primary-soft)}
+  .btn.subtle{background:transparent;color:var(--primary);padding:8px 10px}
   .btn.danger{background:var(--danger-soft);color:var(--danger);border-color:transparent}
   .btn:disabled{opacity:.5;cursor:not-allowed}
   .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
@@ -114,9 +117,9 @@
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:22px 24px}
   .fieldlabel{font-weight:700;font-size:13px;margin:0 0 6px}
   .hint{color:var(--muted);font-size:12.5px;margin:5px 0 0}
-  input[type=text],textarea,input[type=time],input[type=datetime-local]{width:100%;padding:10px 12px;border:1px solid var(--line);
-    border-radius:9px;background:var(--surface2);color:var(--ink);font:inherit}
-  input:focus,textarea:focus{outline:2px solid var(--primary);outline-offset:1px;border-color:transparent}
+  input[type=text],textarea,input[type=time],input[type=datetime-local]{width:100%;padding:12px 14px;border:1px solid var(--line);
+    border-radius:4px;background:transparent;color:var(--ink);font:inherit}
+  input:focus,textarea:focus{outline:none;border:2px solid var(--primary);padding:11px 13px}
   textarea{min-height:74px;resize:vertical}
   .counter{float:right;color:var(--muted);font-weight:400;font-size:12px}
   .field{margin-bottom:18px}
