@@ -4,13 +4,17 @@ Interactive **design mockups** for a "broadcast messaging" feature (send a gener
 message to a group of care Genies). Published here only to give reviewers without a
 Claude licence links they can open.
 
-## Two views
+## Views
 
 - **Care-staff view** → [`/staff/`](./staff/) — the clean, product-style Broadcasts
   screen as care-centre staff would use it (compose, scheduled/sent list, confirmation
   tracking, quiet-hours settings).
 - **Design / testing prototype** → [`/`](./) — the same feature with design-decision
   markers and an edge-case walkthrough rig, used to test the UX and open questions.
+- **Hardware spec strategy** → [`/hardware/`](./hardware/) — how we decide what physical
+  Genie device to build (cost-constrained, "comms now, monitoring later"): the approach,
+  a cheap-to-expensive test ladder, and a decision register of the open hardware questions
+  with how each gets answered. A strategy doc, not a mockup.
 
 ## Please note
 
