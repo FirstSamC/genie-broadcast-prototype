@@ -96,6 +96,13 @@
   .settingsrow{display:flex;gap:14px;align-items:end;flex-wrap:wrap}
   .note{font-size:12.5px;color:var(--muted);margin-top:6px}
   .flash{background:var(--eph-bg);border:1px solid var(--eph);color:var(--eph);border-radius:8px;padding:8px 12px;margin-top:12px;font-size:13.5px;font-weight:600}
+  .review{border:1px solid var(--warn);background:var(--warn-bg);border-radius:10px;padding:14px 16px;margin-top:14px}
+  .review-h{font-size:13.5px;color:var(--warn);margin-bottom:10px}
+  .review-dl{margin:0;display:grid;gap:7px}
+  .review-dl > div{display:flex;gap:10px;font-size:13.5px;align-items:baseline}
+  .review-dl dt{flex:0 0 108px;color:var(--muted);font-weight:600;margin:0}
+  .review-dl dd{margin:0;font-weight:600;word-break:break-word}
+  .review-dl dd.msg{font-weight:400;white-space:pre-wrap}
   .hidden{display:none}
   code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12.5px}
 </style>
@@ -166,6 +173,7 @@
     <p class="note"><span class="open-q">OPEN Q · OD-12</span> If a time-sensitive message expires undelivered, should that show on the staff list? (Quiet-hours interaction is settled: it expires during quiet hours too.)</p>
 
     <div style="margin-top:20px"><button class="btn primary" id="reviewBtn">Review &amp; send…</button></div>
+    <div class="review hidden" id="reviewCard"></div>
     <div class="flash hidden" id="composeFlash"></div>
   </section>
 
@@ -226,6 +234,7 @@ const NOT_DEPLOYED = ["(new) Flat 12 — pairing","(new) Flat 27 — assigned","
 let msgType = "ack";
 const scheduled = [];      // {id,title,type,recips,at,released,acks:{name:bool}}
 let idSeq = 1;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 /* ---------- tabs ---------- */
 const tabs = document.getElementById("tabs");
@@ -269,27 +278,44 @@ document.getElementById("quickbtns").addEventListener("click",e=>{
   schedat.value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 });
 
+const reviewCard=document.getElementById("reviewCard");
 document.getElementById("reviewBtn").onclick=()=>{
   const title=mtitle.value.trim()||"(no title)";
+  const body=mbody.value.trim();
   const recips = document.querySelector("input[name=rec]:checked").value==="all"
       ? DEPLOYED.slice() : [...reclist.querySelectorAll("input:checked")].map(i=>i.value);
-  if(!recips.length){ flash("composeFlash","Pick at least one recipient.",true); return; }
+  if(!recips.length){ reviewCard.classList.add("hidden"); flash("composeFlash","Pick at least one recipient.",true); return; }
   const when = document.querySelector("input[name=when]:checked").value;
   const at = when==="later" ? (schedat.value||"(no time set)") : "now";
   const typeLabel = msgType==="ack" ? "Requires acknowledgement" : "For information";
   const ts = document.getElementById("timesens").checked;
-  const ok = confirm(
-    `Review before sending — THIS CANNOT BE RECALLED.\n\n`+
-    `Type: ${typeLabel}\nTime-sensitive: ${ts?"Yes — dropped if >1h late":"No"}\nTitle: ${title}\n`+
-    `Recipients: ${recips.length} deployed Genie(s)\nWhen: ${at}\n\n`+
-    `Send?`);
-  if(!ok) return;
-  const rec={id:idSeq++,title,type:msgType,recips,at,released:(when==="now"),
-    acks:Object.fromEntries(recips.map(n=>[n,false]))};
-  scheduled.push(rec);
-  flash("composeFlash", when==="now"
-    ? `Released to ${recips.length} Genie(s). See “Acknowledgements”. No recall now.`
-    : `Scheduled for ${at}. Editable/cancellable until release — see “Scheduled”.`);
+  document.getElementById("composeFlash").classList.add("hidden");
+  reviewCard.innerHTML=`
+    <div class="review-h">⚠︎ Review before sending — <b>this cannot be recalled.</b></div>
+    <dl class="review-dl">
+      <div><dt>Type</dt><dd>${typeLabel}</dd></div>
+      <div><dt>Time-sensitive</dt><dd>${ts?"Yes — dropped if &gt;1h late":"No"}</dd></div>
+      <div><dt>Title</dt><dd>${esc(title)}</dd></div>
+      ${body?`<div><dt>Message</dt><dd class="msg">${esc(body)}</dd></div>`:``}
+      <div><dt>Recipients</dt><dd>${recips.length} deployed Genie(s)</dd></div>
+      <div><dt>When</dt><dd>${at==="now"?"Send now":esc(at)}</dd></div>
+    </dl>
+    <div class="row" style="margin-top:12px">
+      <button class="btn danger" id="confirmSend">Confirm &amp; send</button>
+      <button class="btn ghost" id="cancelSend">Cancel</button>
+    </div>`;
+  reviewCard.classList.remove("hidden");
+  reviewCard.scrollIntoView({behavior:"smooth",block:"nearest"});
+  document.getElementById("cancelSend").onclick=()=>reviewCard.classList.add("hidden");
+  document.getElementById("confirmSend").onclick=()=>{
+    const rec={id:idSeq++,title,type:msgType,recips,at,released:(when==="now"),
+      acks:Object.fromEntries(recips.map(n=>[n,false]))};
+    scheduled.push(rec);
+    reviewCard.classList.add("hidden");
+    flash("composeFlash", when==="now"
+      ? `Released to ${recips.length} Genie(s). See “Acknowledgements”. No recall now.`
+      : `Scheduled for ${at}. Editable/cancellable until release — see “Scheduled”.`);
+  };
 };
 
 function flash(id,msg,warn){const el=document.getElementById(id);el.textContent=msg;el.classList.remove("hidden");
@@ -301,13 +327,16 @@ function renderSched(){
   const ul=document.getElementById("schedList");
   const up=scheduled.filter(s=>!s.released);
   ul.innerHTML = up.length ? up.map(s=>`<li>
-      <div class="t">${s.title} <span class="badge ${s.type}">${s.type==="ack"?"ack":"Info"}</span></div>
-      <div class="meta">${s.recips.length} recipients · release: ${s.at}</div>
+      <div class="t">${esc(s.title)} <span class="badge ${s.type}">${s.type==="ack"?"ack":"Info"}</span></div>
+      <div class="meta">${s.recips.length} recipients · release: ${esc(s.at)}</div>
       <div class="row" style="margin-top:8px">
-        <button class="btn ghost" onclick="alert('Edit flow (prototype): recipients, time, type, content — allowed only before release.')">Edit</button>
+        <button class="btn ghost" data-edit="${s.id}">Edit</button>
         <button class="btn danger" data-cancel="${s.id}">Cancel</button>
-      </div></li>`).join("")
+      </div>
+      <div class="note hidden" data-editnote="${s.id}">Edit flow (prototype): recipients, time, type and content are all editable — but only before release.</div></li>`).join("")
     : `<li class="meta">No scheduled broadcasts. Compose one with “Schedule”.</li>`;
+  ul.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>
+    ul.querySelector(`[data-editnote="${b.dataset.edit}"]`).classList.toggle("hidden"));
   ul.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{
     const i=scheduled.findIndex(s=>s.id==b.dataset.cancel); if(i>-1)scheduled.splice(i,1); renderSched();});
 }
@@ -317,19 +346,22 @@ function renderAcks(){
   const ul=document.getElementById("ackList");
   const rel=scheduled.filter(s=>s.released);
   ul.innerHTML = rel.length ? rel.map(s=>{
-    if(s.type==="eph") return `<li><div class="t">${s.title} <span class="badge eph">Info</span></div>
+    if(s.type==="eph") return `<li><div class="t">${esc(s.title)} <span class="badge eph">Info</span></div>
       <div class="meta">Delivered to ${s.recips.length}. <b>No read tracking</b> (OD-2 — delivery only).</div></li>`;
     const done=Object.values(s.acks).filter(Boolean).length, tot=s.recips.length;
-    return `<li><div class="t">${s.title} <span class="badge ack">ack</span></div>
+    return `<li><div class="t">${esc(s.title)} <span class="badge ack">ack</span></div>
       <div class="meta"><b>${done} of ${tot}</b> acknowledged · ${tot-done} outstanding</div>
       <div class="row" style="margin-top:8px">
         <button class="btn ghost" data-sim="${s.id}">Simulate some acks</button>
-        <button class="btn ghost" onclick="alert('Follow-up flow (prototype): message / call the outstanding recipients.')">Follow up outstanding</button>
-      </div></li>`;}).join("")
+        <button class="btn ghost" data-follow="${s.id}">Follow up outstanding</button>
+      </div>
+      <div class="note hidden" data-follownote="${s.id}">Follow-up flow (prototype): message or call the recipients still outstanding.</div></li>`;}).join("")
     : `<li class="meta">Nothing released yet. Send a broadcast “now” from Compose.</li>`;
   ul.querySelectorAll("[data-sim]").forEach(b=>b.onclick=()=>{
     const s=scheduled.find(x=>x.id==b.dataset.sim);
     s.recips.forEach((n,i)=>{ if(i%2===0) s.acks[n]=true; }); renderAcks();});
+  ul.querySelectorAll("[data-follow]").forEach(b=>b.onclick=()=>
+    ul.querySelector(`[data-follownote="${b.dataset.follow}"]`).classList.toggle("hidden"));
 }
 
 /* ---------- genie preview ---------- */
@@ -346,12 +378,22 @@ function renderGenie(){
       <div class="gtitle">Reception closed</div>
       <div class="gbody">The front desk is closed this afternoon for staff training.</div>
       <div class="gactions">${ack
-        ? `<button class="gbig" onclick="alert('Acknowledged ✓ — this confirms back to staff.')">OK, got it</button>`
-        : `<button class="gsub" onclick="alert('Dismissed. Nothing tracked.')">Dismiss</button>`}</div>
+        ? `<button class="gbig" id="gBtn">OK, got it</button>`
+        : `<button class="gsub" id="gBtn">Dismiss</button>`}</div>
     </div>`;
   note.textContent = ack
     ? "Acknowledgement-required: actively surfaces and needs a deliberate confirm."
     : "For information: surfaces the same way, but a simple dismiss — no confirm, nothing chased.";
+  document.getElementById("gBtn").onclick=()=>{
+    const actions=g.querySelector(".gactions");
+    if(ack){
+      actions.innerHTML=`<div style="flex:1;text-align:center;color:#8fce92;font-weight:800;padding:10px">Acknowledged ✓</div>`;
+      note.textContent="Acknowledged — this confirms back to staff and clears them from the outstanding list.";
+    } else {
+      actions.innerHTML=`<div style="flex:1;text-align:center;opacity:.55;padding:10px">Dismissed</div>`;
+      note.textContent="Dismissed. Nothing tracked — delivery only (OD-2).";
+    }
+  };
 }
 document.querySelectorAll("input[name=gt]").forEach(r=>r.onchange=renderGenie);
 
